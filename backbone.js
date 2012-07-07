@@ -583,6 +583,22 @@
       return Backbone.sync.apply(this, arguments);
     },
 
+    replace: function(results, options) {
+        var result, model, uid_attr;
+        // Replace all attrs on existing models via set.
+        // Add models if not found.
+        for (i = 0, length = results.length; i < length; i++ ) {
+            result = results[i];
+            // If not currently in collection or no ID.. add.
+            if ( !result.id || !(model = this._byId[result.id]) ) {
+                this.add(result, options);
+            } else {
+                // model is now model from collection
+                // model exists in collection, set new attrs on it.
+                model.set(result);
+            }
+        }
+    },
     // Add a model, or list of models to the set. Pass **silent** to avoid
     // firing the `add` event for every new model.
     add: function(models, options) {
@@ -774,8 +790,16 @@
       if (options.parse === undefined) options.parse = true;
       var collection = this;
       var success = options.success;
+      var method;
+      if ( options.add ) {
+        method = 'add';
+      } else if ( options.replace ) {
+        method = 'replace';
+      } else {
+        method = 'reset'
+      }
       options.success = function(resp, status, xhr) {
-        collection[options.add ? 'add' : 'reset'](collection.parse(resp, xhr), options);
+        collection[method](collection.parse(resp, xhr), options);
         if (success) success(collection, resp, options);
         collection.trigger('sync', collection, resp, options);
       };
